@@ -127,7 +127,9 @@ flowchart TB
  uv sync
 ```
 
-Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies). 3. **Download the Instacart data** from Kaggle into `data/`. You need at least:
+Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies).
+
+3. **Download the Instacart data** from Kaggle into `data/`. You need at least:
 
 - `orders.csv`
 - `order_products__prior.csv`
@@ -135,8 +137,8 @@ Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies). 3. **Do
 - `aisles.csv`
 - `departments.csv`
 
-1. **Optional:** Create a `.env` file in the project root with `HF_TOKEN=...` if you use private Hugging Face models or datasets.
-2. **Verify:** Run data prep (see Pipeline below); it will fail with a clear error if any CSV is missing or misnamed.
+4. **Optional:** Create a `.env` file in the project root with `HF_TOKEN=...` if you use private Hugging Face models or datasets.
+5. **Verify:** Run data prep (see Pipeline below); it will fail with a clear error if any CSV is missing or misnamed.
 
 ---
 
@@ -152,6 +154,7 @@ Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies). 3. **Do
 | **Compare untrained vs trained** | `uv run python scripts/compare_untrained_vs_trained.py`                                              | Check for embedding collapse; compare metrics                                             |
 | **Feedback analytics**           | `uv run python scripts/feedback_analytics.py`                                                        | CTR, add-to-cart rate, purchase rate from feedback                                        |
 | **Generate sample feedback**     | `uv run python scripts/generate_sample_feedback.py`                                                  | Send recommend + feedback requests to API (run feedback_analytics separately for reports) |
+| **Upload model to HF**           | `uv run python scripts/upload_model_to_hf.py --repo-id USER/instacart-two-tower-sbert`               | Upload trained model to Hugging Face Hub (set repo_id in configs/upload_model.yaml or --repo-id) |
 | **API tests**                    | `uv run pytest tests/ -v`                                                                            | Run API tests (mocked recommender)                                                        |
 | **Docker**                       | `docker build -t instacart-rec-api .` then `docker run -p 8000:8000 -v ...` (see [API](#api) Docker) | Containerized deployment                                                                  |
 
@@ -166,7 +169,7 @@ Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies). 3. **Do
 | File                        | Key columns                                                                                         | Role                                                                                                                          |
 | --------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **orders.csv**              | order_id, user_id, **eval_set**, order_number, order_dow, order_hour_of_day, days_since_prior_order | `eval_set == "train"` → target “next” orders we predict for; `eval_set == "prior"` → history used to build user context only. |
-| **order_productsprior.csv** | order_id, product_id                                                                                | Which products are in each prior order; used to build (anchor, positive) pairs.                                               |
+| **order_products__prior.csv** | order_id, product_id                                                                                | Which products are in each prior order; used to build (anchor, positive) pairs.                                               |
 | **products.csv**            | product_id, product_name, aisle_id, department_id                                                   | Product names and hierarchy.                                                                                                  |
 | **aisles.csv**              | aisle_id, aisle                                                                                     | Aisle names for product text.                                                                                                 |
 | **departments.csv**         | department_id, department                                                                           | Department names for product text.                                                                                            |
@@ -517,6 +520,16 @@ uv run python scripts/compare_untrained_vs_trained.py --processed-dir processed/
 | `--base-model`     | Pretrained model name (must match training base) |
 | `--sample-queries` | Use random subset of eval queries for faster run |
 
+### Upload model to Hugging Face
+
+Upload your trained model to the Hugging Face Hub for sharing or for use with `MODEL_DIR=USER/instacart-two-tower-sbert` in Docker/API:
+
+```bash
+uv run python scripts/upload_model_to_hf.py --repo-id YOUR_USERNAME/instacart-two-tower-sbert
+```
+
+Set `repo_id` in `configs/upload_model.yaml` or pass `--repo-id`. Authenticate with `huggingface-cli login` or `HF_TOKEN` in `.env`.
+
 ---
 
 ## Docker
@@ -635,11 +648,12 @@ Then open [http://localhost:8000/docs](http://localhost:8000/docs).
 | **src/inference/serve_recommendations.py** | Recommender, MonitoredRecommender: embedding-based serve; caches product embeddings on disk; encodes query, returns top-k by cosine similarity. CLI via `python -m src.inference`.                                                                  |
 | **src/api/**                               | FastAPI service: `main.py`, `routes/`, `schemas.py`, `feedback_store.py`, `auth.py`, `metrics.py`. Run: `uvicorn src.api.main:app`.                                                                                                               |
 | **tests/**                                 | API tests: `pytest tests/`. Mock recommender to avoid loading model in CI.                                                                                                                                                                        |
-| **scripts/**                               | `feedback_analytics.py` (CTR, funnel), `generate_sample_feedback.py`, `compare_untrained_vs_trained.py`.                                                                                                                                          |
+| **scripts/**                               | `feedback_analytics.py` (CTR, funnel), `generate_sample_feedback.py`, `compare_untrained_vs_trained.py`, `upload_model_to_hf.py`.                                                                                                                                          |
 | **src/baselines/**                         | Content-based (untrained SBERT) and CF (item-item) baselines; same eval and metrics as SBERT. Run: `python -m src.baselines`.                                                                                                                     |
 | **notebooks/**                             | Jupyter notebooks for data prep, training, serve, and baselines (mirror the scripts for interactive use).                                                                                                                                         |
 | **pyproject.toml**, **uv.lock**            | Project and dependency lock (uv).                                                                                                                                                                                                                 |
 | **k8s/**                                   | Kubernetes manifests: `deployment.yaml`, `pvc.yaml`, `README.md`.                                                                                                                                                                                 |
+| **docs/**                                  | `ARCHITECTURE.md` — detailed architecture and flow diagrams.                                                                                                                                                                                     |
 
 ---
 
