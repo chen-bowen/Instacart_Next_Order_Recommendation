@@ -2,7 +2,7 @@
 
 This project ranks products by likelihood of appearing in a user's next order. I built a two-tower Sentence-BERT model on the [Instacart dataset](https://www.kaggle.com/c/instacart-market-basket-analysis) (one tower for user context, one for product text), an end-to-end pipeline (data prep → train → serve), a FastAPI service with `/recommend` and `/feedback` endpoints, baselines (content-based SBERT, item-item CF), a feedback loop (SQLite storage, `feedback_analytics.py` for CTR/funnel metrics, `generate_sample_feedback.py` for sample data), production features (Prometheus, rate limiting, API key auth, Docker, MPS for Apple Silicon), and scripts to compare untrained vs trained and check for embedding collapse.
 
-See the the two blog posts for a deeper walkthrough [blog post part 1](https://medium.com/@bowenchen/from-purchase-history-to-recommendations-a-two-tower-approach-to-rank-products-c624d8a6c024), [blog post part 2](https://medium.com/@bowenchen/from-two-tower-model-training-to-production-deployment-monitoring-and-beyond-6dc0bba9de50)
+See the the two blog posts for a deeper walkthrough [Medium Blog 1](https://medium.com/@bowenchen/from-purchase-history-to-recommendations-a-two-tower-approach-to-rank-products-c624d8a6c024), [Medium Blog 2](https://medium.com/@bowenchen/from-two-tower-model-training-to-production-deployment-monitoring-and-beyond-6dc0bba9de50)
 
 **Contents:** [What we are predicting](#what-we-are-predicting) · [Requirements](#requirements) · [Setup](#setup) · [How to use each component](#how-to-use-each-component) · [Pipeline](#pipeline) · [Results](#results) · [API](#api) · [Docker](#docker) · [Kubernetes](#kubernetes) · [Project structure](#project-structure)
 
