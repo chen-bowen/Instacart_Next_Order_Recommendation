@@ -1,0 +1,13 @@
+# Upload eval_corpus.json to Hugging Face Hub
+# Run: uv run python scripts/upload_corpus_to_hf.py
+# Override: uv run python scripts/upload_corpus_to_hf.py --config configs/other.yaml
+# Set repo_id below or pass --repo-id for one-off override
+# Authenticate: huggingface-cli login or HF_TOKEN in .env
+
+# repo_id: required; e.g. YOUR_USERNAME/instacart-eval-corpus (dataset) or YOUR_USERNAME/instacart-two-tower-sbert (model)
+repo_id: null
+# Path to eval_corpus.json (default: auto-resolve from processed/)
+corpus_path: null
+# repo_type: "dataset" (default) or "model" (to add to model repo)
+repo_type: dataset
+private: false

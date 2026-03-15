@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
+
+from src.constants import (
+    DEFAULT_CORPUS_HF_REPO,
+    DEFAULT_CORPUS_HF_REPO_TYPE,
+    EVAL_CORPUS_FILENAME,
+)
 
 
 _GRAY = "\033[90m"
@@ -100,3 +107,52 @@ def resolve_processed_dir(
             f"Train dataset not found at {train_path}. Run data prep first or pass --processed-dir (e.g. processed/p5_mp20_ef0.1)."
         )
     return processed_dir, None
+
+
+def resolve_corpus_with_hf_fallback(
+    corpus_path: Path,
+    *,
+    hf_repo: str | None = None,
+    hf_repo_type: str | None = None,
+) -> Path:
+    """Resolve corpus path; if file does not exist, download from Hugging Face Hub.
+
+    Args:
+        corpus_path: Local path to eval_corpus.json.
+        hf_repo: Hugging Face repo ID (e.g. user/instacart-eval-corpus). Overridden by CORPUS_HF_REPO env.
+        hf_repo_type: 'dataset' or 'model'. Overridden by CORPUS_HF_REPO_TYPE env.
+
+    Returns:
+        Path to the corpus file (local or downloaded to HF cache).
+
+    Raises:
+        FileNotFoundError: If corpus does not exist locally and hf_repo is not set or download fails.
+    """
+    path = Path(corpus_path).resolve()
+    if path.is_file():
+        return path
+
+    repo = hf_repo or os.getenv("CORPUS_HF_REPO") or DEFAULT_CORPUS_HF_REPO
+    repo_type = hf_repo_type or os.getenv("CORPUS_HF_REPO_TYPE") or DEFAULT_CORPUS_HF_REPO_TYPE
+
+    if not repo:
+        raise FileNotFoundError(
+            f"eval_corpus.json not found at {path}. Run data prep first:\n"
+            "  uv run python -m src.data.prepare_instacart_sbert\n"
+            "Or set CORPUS_HF_REPO to download from Hugging Face (e.g. user/instacart-eval-corpus)."
+        )
+
+    from huggingface_hub import hf_hub_download
+
+    try:
+        downloaded = hf_hub_download(
+            repo_id=repo,
+            filename=EVAL_CORPUS_FILENAME,
+            repo_type=repo_type,
+        )
+        return Path(downloaded)
+    except Exception as e:
+        raise FileNotFoundError(
+            f"eval_corpus.json not found at {path} and download from {repo} failed: {e}\n"
+            "Run data prep first or upload corpus with: uv run python scripts/upload_corpus_to_hf.py"
+        ) from e

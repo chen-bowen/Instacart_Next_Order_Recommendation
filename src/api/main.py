@@ -29,6 +29,7 @@ from src.api.routes.recommend import router as recommend_router
 from src.api.schemas import HealthResponse
 from src.constants import DEFAULT_CORPUS_PATH, DEFAULT_MODEL_DIR
 from src.inference.serve_recommendations import MonitoredRecommender
+from src.utils import resolve_corpus_with_hf_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,10 @@ def _resolve_model_dir() -> Path:
 
 
 def _resolve_corpus_path() -> Path:
-    """Resolve corpus JSON path from CORPUS_PATH env or default."""
+    """Resolve corpus JSON path from CORPUS_PATH env or default. Downloads from HF if not found locally."""
     value = os.getenv("CORPUS_PATH")
-    return Path(value) if value else DEFAULT_CORPUS_PATH
+    path = Path(value) if value else DEFAULT_CORPUS_PATH
+    return resolve_corpus_with_hf_fallback(path)
 
 
 @asynccontextmanager
@@ -65,7 +67,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Load recommender model (model_dir can be a local path or a Hugging Face model ID)
     model_dir = _resolve_model_dir()
-    corpus_path = _resolve_corpus_path().resolve()
+    corpus_path = _resolve_corpus_path()
     logger.info("Loading recommender model_dir=%s corpus=%s", model_dir, corpus_path)
     recommender = MonitoredRecommender(model_dir=model_dir, corpus_path=corpus_path)
 

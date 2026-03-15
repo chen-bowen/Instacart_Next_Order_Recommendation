@@ -155,6 +155,7 @@ Or with pip: `pip install -e .` (see `pyproject.toml` for dependencies).
 | **Feedback analytics**           | `uv run python scripts/feedback_analytics.py`                                                        | CTR, add-to-cart rate, purchase rate from feedback                                        |
 | **Generate sample feedback**     | `uv run python scripts/generate_sample_feedback.py`                                                  | Send recommend + feedback requests to API (run feedback_analytics separately for reports) |
 | **Upload model to HF**           | `uv run python scripts/upload_model_to_hf.py --repo-id USER/instacart-two-tower-sbert`               | Upload trained model to Hugging Face Hub (set repo_id in configs/upload_model.yaml or --repo-id) |
+| **Upload corpus to HF**         | `uv run python scripts/upload_corpus_to_hf.py --repo-id USER/instacart-eval-corpus`                 | Upload eval_corpus.json to Hugging Face (dataset repo by default; use --repo-type model to add to model repo) |
 | **API tests**                    | `uv run pytest tests/ -v`                                                                            | Run API tests (mocked recommender)                                                        |
 | **Docker**                       | `docker build -t instacart-rec-api .` then `docker run -p 8000:8000 -v ...` (see [API](#api) Docker) | Containerized deployment                                                                  |
 
@@ -353,10 +354,12 @@ The server **loads the model from local disk by default** (`models/two_tower_sbe
 
 **Environment variables:**
 
-| Variable           | Description                                                                                               |
-| ------------------ | --------------------------------------------------------------------------------------------------------- |
-| `MODEL_DIR`        | Path to the trained model directory (default: `models/two_tower_sbert/final`), or a Hugging Face model ID |
-| `CORPUS_PATH`      | Path to the product corpus JSON (default: `processed/.../eval_corpus.json`)                               |
+| Variable             | Description                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `MODEL_DIR`          | Path to the trained model directory (default: `models/two_tower_sbert/final`), or a Hugging Face model ID |
+| `CORPUS_PATH`        | Path to the product corpus JSON (default: `processed/.../eval_corpus.json`). If not found, downloads from `CORPUS_HF_REPO`. |
+| `CORPUS_HF_REPO`     | Hugging Face repo for corpus fallback when local file missing (default: `chenbowen184/instacart-eval-corpus`) |
+| `CORPUS_HF_REPO_TYPE`| `dataset` or `model` for corpus fallback (default: `dataset`)                                             |
 | `FEEDBACK_DB_PATH` | Path to the SQLite database for feedback events (default: `data/feedback.db`)                             |
 | `INFERENCE_DEVICE` | Device for model inference: `cuda`, `mps` (Apple Silicon), or `cpu` (default: auto-detect)                |
 | `API_KEY`          | When set, require API key on `/recommend` and `/feedback` (X-API-Key or Authorization: Bearer)            |
@@ -530,6 +533,20 @@ uv run python scripts/upload_model_to_hf.py --repo-id YOUR_USERNAME/instacart-tw
 
 Set `repo_id` in `configs/upload_model.yaml` or pass `--repo-id`. Authenticate with `huggingface-cli login` or `HF_TOKEN` in `.env`.
 
+### Upload corpus to Hugging Face
+
+Upload `eval_corpus.json` to the same dataset repo or to a model repo (e.g. alongside the model):
+
+```bash
+# Dataset repo (default)
+uv run python scripts/upload_corpus_to_hf.py --repo-id YOUR_USERNAME/instacart-eval-corpus
+
+# Add to model repo
+uv run python scripts/upload_corpus_to_hf.py --repo-id YOUR_USERNAME/instacart-two-tower-sbert --repo-type model
+```
+
+Corpus path auto-resolves from `processed/`. If not found locally, downloads from Hugging Face (same fallback as API/inference). Use `--corpus-path` to override.
+
 ---
 
 ## Docker
@@ -560,7 +577,7 @@ docker run -p 8000:8000 \
 
 ### Using the Hugging Face model
 
-Skip local training and use the pre-trained model. You still need `eval_corpus.json` from data prep:
+Skip local training and use the pre-trained model. `eval_corpus.json` is downloaded from Hugging Face automatically if not found locally:
 
 ```bash
 docker run -p 8000:8000 \
@@ -648,7 +665,7 @@ Then open [http://localhost:8000/docs](http://localhost:8000/docs).
 | **src/inference/serve_recommendations.py** | Recommender, MonitoredRecommender: embedding-based serve; caches product embeddings on disk; encodes query, returns top-k by cosine similarity. CLI via `python -m src.inference`.                                                                  |
 | **src/api/**                               | FastAPI service: `main.py`, `routes/`, `schemas.py`, `feedback_store.py`, `auth.py`, `metrics.py`. Run: `uvicorn src.api.main:app`.                                                                                                               |
 | **tests/**                                 | API tests: `pytest tests/`. Mock recommender to avoid loading model in CI.                                                                                                                                                                        |
-| **scripts/**                               | `feedback_analytics.py` (CTR, funnel), `generate_sample_feedback.py`, `compare_untrained_vs_trained.py`, `upload_model_to_hf.py`.                                                                                                                                          |
+| **scripts/**                               | `feedback_analytics.py` (CTR, funnel), `generate_sample_feedback.py`, `compare_untrained_vs_trained.py`, `upload_model_to_hf.py`, `upload_corpus_to_hf.py`.                                                                                                                                          |
 | **src/baselines/**                         | Content-based (untrained SBERT) and CF (item-item) baselines; same eval and metrics as SBERT. Run: `python -m src.baselines`.                                                                                                                     |
 | **notebooks/**                             | Jupyter notebooks for data prep, training, serve, and baselines (mirror the scripts for interactive use).                                                                                                                                         |
 | **pyproject.toml**, **uv.lock**            | Project and dependency lock (uv).                                                                                                                                                                                                                 |

@@ -5,7 +5,10 @@
 # Model: local path or Hugging Face model ID (e.g. chenbowen184/instacart-two-tower-sbert)
 model_dir: models/two_tower_sbert/final
 # Corpus: product_id -> text map from data prep (eval_corpus.json)
+# If not found locally, download from corpus_hf_repo (set CORPUS_HF_REPO env to override)
 corpus: processed/p5_mp20_ef0.1/eval_corpus.json
+corpus_hf_repo: chenbowen184/instacart-eval-corpus
+corpus_hf_repo_type: dataset
 
 # use_index: cache product embeddings on disk for faster startup
 use_index: true

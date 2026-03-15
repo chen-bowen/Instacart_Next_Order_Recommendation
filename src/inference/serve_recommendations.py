@@ -43,6 +43,7 @@ from src.constants import (
     PRODUCT_IDS_FILENAME,
     PROJECT_ROOT,
 )
+from src.utils import resolve_corpus_with_hf_fallback
 
 logger = logging.getLogger(__name__)
 load_dotenv(DEFAULT_DOTENV_PATH)
@@ -298,7 +299,12 @@ class InferenceConfig:
     def __init__(self, raw: dict):
         """Parse raw YAML dict into typed config attributes."""
         self.model_dir = self._resolve_model_dir(raw.get("model_dir", str(DEFAULT_MODEL_DIR)))
-        self.corpus = self._resolve_path(raw.get("corpus"), DEFAULT_CORPUS_PATH)
+        corpus_path = self._resolve_path(raw.get("corpus"), DEFAULT_CORPUS_PATH)
+        self.corpus = resolve_corpus_with_hf_fallback(
+            corpus_path,
+            hf_repo=raw.get("corpus_hf_repo"),
+            hf_repo_type=raw.get("corpus_hf_repo_type"),
+        )
         self.use_index = bool(raw.get("use_index", True))
         self.query = raw.get("query")
         self.eval_query_id = raw.get("eval_query_id")

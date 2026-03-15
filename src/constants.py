@@ -26,6 +26,7 @@ DEFAULT_CONFIG_BASELINES = CONFIG_DIR / "baselines.yaml"
 DEFAULT_CONFIG_COMPARE = CONFIG_DIR / "compare_untrained_vs_trained.yaml"
 DEFAULT_CONFIG_FEEDBACK_ANALYTICS = CONFIG_DIR / "feedback_analytics.yaml"
 DEFAULT_CONFIG_UPLOAD_MODEL = CONFIG_DIR / "upload_model.yaml"
+DEFAULT_CONFIG_UPLOAD_CORPUS = CONFIG_DIR / "upload_corpus.yaml"
 DEFAULT_CONFIG_GENERATE_SAMPLE_FEEDBACK = CONFIG_DIR / "generate_sample_feedback.yaml"
 
 # Data prep: input CSVs under data_dir; output goes to processed/<param_subdir>/
@@ -70,6 +71,10 @@ DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "models" / "two_tower_sbert"
 # Serve: trained model and product corpus (data prep writes to param subdir, e.g. p5_mp20_ef0.1)
 DEFAULT_MODEL_DIR = PROJECT_ROOT / "models" / "two_tower_sbert" / "final"
 DEFAULT_CORPUS_PATH = PROJECT_ROOT / "processed" / "p5_mp20_ef0.1" / EVAL_CORPUS_FILENAME
+
+# Hugging Face fallback when eval_corpus.json not found locally (env: CORPUS_HF_REPO, CORPUS_HF_REPO_TYPE)
+DEFAULT_CORPUS_HF_REPO = "chenbowen184/instacart-eval-corpus"
+DEFAULT_CORPUS_HF_REPO_TYPE = "dataset"
 
 # Feedback
 DEFAULT_FEEDBACK_DB_PATH = PROJECT_ROOT / "data" / "feedback.db"
